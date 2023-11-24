@@ -10,17 +10,22 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.hopcape.cryptotoolkit.getCryptoManager
 import com.hopcape.passwordvault.ui.theme.PasswordVaultTheme
 
+private const val TAG = "MainActivity"
 class MainActivity : ComponentActivity() {
+
+    private val cryptoManager by getCryptoManager()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             PasswordVaultTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    Greeting("Android")
+
                 }
+
             }
         }
     }

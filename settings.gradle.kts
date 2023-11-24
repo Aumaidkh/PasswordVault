@@ -15,4 +15,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Password Vault"
 include(":app")
- 
+include(":cryptoToolkit")

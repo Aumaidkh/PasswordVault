@@ -1,8 +1,8 @@
 package com.hopcape.cryptotoolkit.keys
 
-import javax.crypto.SecretKey
+import java.security.Key
 
 interface KeyManager {
-    fun generateKey(password: String, salt: ByteArray): SecretKey
+    fun generateKey(password: String, salt: ByteArray): Key
 
 }

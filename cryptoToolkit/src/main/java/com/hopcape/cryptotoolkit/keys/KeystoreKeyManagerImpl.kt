@@ -2,53 +2,58 @@ package com.hopcape.cryptotoolkit.keys
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import java.security.Key
 import java.security.KeyStore
+import java.security.spec.KeySpec
 import javax.crypto.KeyGenerator
-import javax.crypto.SecretKey
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
-class KeystoreKeyManagerImpl: KeyManager {
+internal class KeystoreKeyManagerImpl: KeyManager {
 
-    private val KEY_ALIAS = "alias"
+    private val KEY_ALIAS = "newKeyAnotherKey"
     private val KEYSTORE_PROVIDER = "AndroidKeyStore"
-    private val ALGORITHM = KeyProperties.KEY_ALGORITHM_AES
-    private val BLOCK_MODE = KeyProperties.BLOCK_MODE_CBC
-    private val PADDING = KeyProperties.ENCRYPTION_PADDING_PKCS7
-    private val KEY_SIZE = 256
-    private val KEY_ALGORITHM = KeyProperties.KEY_ALGORITHM_AES
+    private val ITERATION_COUNT = 10000
+    private val KEY_LENGTH = 256
+
 
     private val keyStore =
         KeyStore.getInstance(KEYSTORE_PROVIDER).apply {
             load(null)
         }
 
-    override fun generateKey(password: String, salt: ByteArray): SecretKey {
-        val existingKey = keyStore.getEntry(KEY_ALIAS, null) as? KeyStore.SecretKeyEntry
-        return existingKey?.secretKey ?: createKey(password, salt)
+    override fun generateKey(password: String, salt: ByteArray): Key {
+        return generateDerivedKey(password,salt)
     }
 
-    private fun createKey(password: String, salt: ByteArray): SecretKey {
-        val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
-        val spec = PBEKeySpec(password.toCharArray(), salt, 10000, KEY_SIZE)
-        val secretKey = SecretKeySpec(factory.generateSecret(spec).encoded, KEY_ALGORITHM)
+    private fun generateDerivedKey(password: String, salt: ByteArray): Key {
+        val keySpec: KeySpec = PBEKeySpec(password.toCharArray(), salt, ITERATION_COUNT, KEY_LENGTH)
+        val secretKeyFactory: SecretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
+        val keyBytes = secretKeyFactory.generateSecret(keySpec).encoded
+        return SecretKeySpec(keyBytes, KeyProperties.KEY_ALGORITHM_AES)
+    }
 
-        val keyGenParameterSpec = KeyGenParameterSpec.Builder(
-            KEY_ALIAS,
-            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
-        )
-            .setBlockModes(BLOCK_MODE)
-            .setEncryptionPaddings(PADDING)
-            .setUserAuthenticationRequired(false)
-            .setKeySize(KEY_SIZE)
-            .build()
+    private fun generateKey(): Key {
+        if (keyStore.containsAlias(KEY_ALIAS)){
+            return keyStore.getKey(KEY_ALIAS,null)
+        }
+        val keyGenerator = getKeyGenerator()
 
-        val keyGenerator = KeyGenerator.getInstance(KEY_ALGORITHM, KEYSTORE_PROVIDER)
-        keyGenerator.init(keyGenParameterSpec)
-        keyGenerator.generateKey()
+        return keyGenerator.generateKey()
+    }
 
-        return secretKey
+    private fun getKeyGenerator(): KeyGenerator {
+        return KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES).apply {
+            KeyGenParameterSpec
+                .Builder(KEY_ALIAS,KeyProperties.PURPOSE_DECRYPT or KeyProperties.PURPOSE_ENCRYPT)
+                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .build().also {
+                    init(it)
+                }
+
+        }
     }
 
 }
